@@ -15,6 +15,7 @@ curl -s \
 From: $FROM
 To: $RECIPIENT
 Subject: [Pi] $SUBJECT
+Date: $(date -R)
 
 $BODY
 EOF

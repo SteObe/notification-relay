@@ -3,9 +3,11 @@
 
 MSG=""
 
-# Disk-Füllstand /mnt/nvme
-USED_PCT=$(df /mnt/nvme --output=pcent 2>/dev/null | tail -1 | tr -d ' %')
-[ "${USED_PCT:-0}" -ge 85 ] && MSG+="Disk: ${USED_PCT}% belegt  "
+# Disk-Füllstand
+for mount in / /mnt/nvme; do
+  USED_PCT=$(df "$mount" --output=pcent 2>/dev/null | tail -1 | tr -d ' %')
+  [ "${USED_PCT:-0}" -ge 85 ] && MSG+="Disk ${mount}: ${USED_PCT}% belegt  "
+done
 
 # Fehlgeschlagene Systemd-Services
 FAILED=$(systemctl list-units --state=failed --no-legend --plain 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
