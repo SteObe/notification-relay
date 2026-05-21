@@ -11,6 +11,7 @@ services:
       RELAYHOST_USERNAME: ${SMTP_USERNAME}
       RELAYHOST_PASSWORD: ${SMTP_PASSWORD}
       SMTP_SERVER_HOSTNAME: smtp-relay
+      SMTP_TLS_WRAPPERMODE: "yes"
     ports:
       - "127.0.0.1:2525:25"
     networks:
