@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
+# /usr/local/bin/notify.sh — zentraler Notification-Dispatcher
+# Deployed by: notification-relay
+# Usage: notify.sh "Betreff" "Nachricht"
+
 set -euo pipefail
 
-SUBJECT="${1:-Benachrichtigung}"
-BODY="${2:-Kein Text angegeben}"
-TO="${SMTP_TO:-oberbreyer.stefan@gmail.com}"
-FROM="${SMTP_FROM:-oberbreyer.stefan@gmail.com}"
+SUBJECT="${1:-(kein Betreff)}"
+BODY="${2:-(kein Text)}"
+RECIPIENT="oberbreyer.stefan@gmail.com"
 
-{
-  echo "From: ${FROM}"
-  echo "To: ${TO}"
-  echo "Subject: ${SUBJECT}"
-  echo
-  echo "${BODY}"
-} | docker exec -i smtp-relay sendmail -t
+printf "To: %s\nSubject: [Pi] %s\n\n%s\n" \
+  "$RECIPIENT" "$SUBJECT" "$BODY" \
+  | msmtp "$RECIPIENT"

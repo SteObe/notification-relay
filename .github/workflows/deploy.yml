@@ -11,14 +11,77 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync files to Pi path
+      - name: Dateien synchronisieren
         run: |
-          rsync -av --delete \
+          mkdir -p /opt/docker/notification-relay
+          rsync -a --delete \
             --exclude='.git' \
             --exclude='.github' \
             ./ /opt/docker/notification-relay/
 
-      - name: Restart relay
+      - name: .env anlegen
+        env:
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          if [ -z "$SMTP_PASSWORD" ]; then
+            echo "❌ Secret SMTP_PASSWORD fehlt"
+            exit 1
+          fi
+          sudo tee /opt/docker/notification-relay/.env > /dev/null << EOF
+          TZ=Europe/Vienna
+          SMTP_RELAYHOST=[smtp.gmail.com]:587
+          SMTP_USERNAME=oberbreyer.stefan@gmail.com
+          SMTP_PASSWORD=${SMTP_PASSWORD}
+          SMTP_FROM=oberbreyer.stefan@gmail.com
+          SMTP_TO=oberbreyer.stefan@gmail.com
+          EOF
+          sudo chmod 600 /opt/docker/notification-relay/.env
+          echo "✅ .env gesetzt"
+
+      - name: SMTP-Relay Container starten
         run: |
           cd /opt/docker/notification-relay
-          sudo docker compose up -d
+          sudo docker compose pull
+          sudo docker compose up -d --force-recreate
+          echo "✅ SMTP-Relay gestartet"
+
+      - name: Notification-Scripts deployen
+        run: |
+          sudo cp /opt/docker/notification-relay/scripts/notify.sh           /usr/local/bin/notify.sh
+          sudo cp /opt/docker/notification-relay/scripts/notify-ssh-login.sh /usr/local/bin/notify-ssh-login.sh
+          sudo cp /opt/docker/notification-relay/scripts/notify-backup.sh    /usr/local/bin/notify-backup.sh
+          sudo cp /opt/docker/notification-relay/scripts/nvme-health-check.sh /usr/local/bin/nvme-health-check.sh
+          sudo chmod +x \
+            /usr/local/bin/notify.sh \
+            /usr/local/bin/notify-ssh-login.sh \
+            /usr/local/bin/notify-backup.sh \
+            /usr/local/bin/nvme-health-check.sh
+          echo "✅ Scripts deployed"
+
+      - name: PAM für SSH-Notifications konfigurieren
+        run: |
+          PAM_ENTRY="session optional pam_exec.so /usr/local/bin/notify-ssh-login.sh"
+          if ! sudo grep -qF "notify-ssh-login.sh" /etc/pam.d/sshd; then
+            echo "$PAM_ENTRY" | sudo tee -a /etc/pam.d/sshd > /dev/null
+            echo "✅ PAM-Eintrag ergänzt"
+          else
+            echo "ℹ️  PAM-Eintrag bereits vorhanden"
+          fi
+
+      - name: Systemd Drop-in für Backup-Notification
+        run: |
+          sudo mkdir -p /etc/systemd/system/restic-backup.service.d
+          sudo tee /etc/systemd/system/restic-backup.service.d/notify.conf > /dev/null << 'EOF'
+          [Service]
+          ExecStart=
+          ExecStart=/bin/bash -c '/opt/backup/backup.sh; CODE=$?; /usr/local/bin/notify-backup.sh $CODE; exit $CODE'
+          EOF
+          sudo systemctl daemon-reload
+          echo "✅ Systemd Drop-in gesetzt"
+
+      - name: Test-Notification senden
+        run: |
+          /usr/local/bin/notify.sh \
+            "Notification-Relay eingerichtet" \
+            "Deploy abgeschlossen  |  $(date '+%d.%m.%Y %H:%M')"
+          echo "✅ Test-Mail gesendet"
