@@ -98,6 +98,10 @@ jobs:
 
       - name: Test-Notification senden
         run: |
+          until docker exec smtp-relay postfix status &>/dev/null; do
+            echo "Warte auf postfix..."
+            sleep 2
+          done
           /usr/local/bin/notify.sh \
             "Notification-Relay eingerichtet" \
             "Deploy abgeschlossen  |  $(date '+%d.%m.%Y %H:%M')"
