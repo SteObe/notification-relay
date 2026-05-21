@@ -11,4 +11,4 @@ RECIPIENT="oberbreyer.stefan@gmail.com"
 
 printf "To: %s\nSubject: [Pi] %s\n\n%s\n" \
   "$RECIPIENT" "$SUBJECT" "$BODY" \
-  | msmtp "$RECIPIENT"
+  | sudo msmtp "$RECIPIENT"
