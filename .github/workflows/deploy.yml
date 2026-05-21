@@ -47,16 +47,33 @@ jobs:
 
       - name: Notification-Scripts deployen
         run: |
-          sudo cp /opt/docker/notification-relay/scripts/notify.sh           /usr/local/bin/notify.sh
-          sudo cp /opt/docker/notification-relay/scripts/notify-ssh-login.sh /usr/local/bin/notify-ssh-login.sh
-          sudo cp /opt/docker/notification-relay/scripts/notify-backup.sh    /usr/local/bin/notify-backup.sh
+          sudo cp /opt/docker/notification-relay/scripts/notify.sh            /usr/local/bin/notify.sh
+          sudo cp /opt/docker/notification-relay/scripts/notify-ssh-login.sh  /usr/local/bin/notify-ssh-login.sh
+          sudo cp /opt/docker/notification-relay/scripts/notify-backup.sh     /usr/local/bin/notify-backup.sh
           sudo cp /opt/docker/notification-relay/scripts/nvme-health-check.sh /usr/local/bin/nvme-health-check.sh
+          sudo cp /opt/docker/notification-relay/scripts/health-check.sh      /usr/local/bin/health-check.sh
+          sudo cp /opt/docker/notification-relay/scripts/restic-check.sh      /usr/local/bin/restic-check.sh
           sudo chmod +x \
             /usr/local/bin/notify.sh \
             /usr/local/bin/notify-ssh-login.sh \
             /usr/local/bin/notify-backup.sh \
-            /usr/local/bin/nvme-health-check.sh
+            /usr/local/bin/nvme-health-check.sh \
+            /usr/local/bin/health-check.sh \
+            /usr/local/bin/restic-check.sh
           echo "✅ Scripts deployed"
+
+      - name: Systemd Timer deployen
+        run: |
+          SYSTEMD=/opt/docker/notification-relay/systemd
+          for unit in nvme-health-check health-check restic-check; do
+            sudo cp "$SYSTEMD/${unit}.service" /etc/systemd/system/
+            sudo cp "$SYSTEMD/${unit}.timer"   /etc/systemd/system/
+          done
+          sudo systemctl daemon-reload
+          for unit in nvme-health-check health-check restic-check; do
+            sudo systemctl enable --now "${unit}.timer"
+          done
+          echo "✅ Systemd Timer aktiv"
 
       - name: PAM für SSH-Notifications konfigurieren
         run: |

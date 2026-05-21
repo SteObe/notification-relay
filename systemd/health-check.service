@@ -1,0 +1,7 @@
+[Unit]
+Description=Täglicher System Health Check
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/health-check.sh

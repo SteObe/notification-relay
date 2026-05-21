@@ -1,0 +1,7 @@
+[Unit]
+Description=Wöchentlicher Restic Backup Integrity Check
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/restic-check.sh

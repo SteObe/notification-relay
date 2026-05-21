@@ -1,0 +1,7 @@
+[Unit]
+Description=NVMe Health Check
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/nvme-health-check.sh

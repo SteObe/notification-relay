@@ -1,0 +1,10 @@
+[Unit]
+Description=Wöchentlicher Restic Integrity Check Timer
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
