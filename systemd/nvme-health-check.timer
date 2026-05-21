@@ -1,0 +1,10 @@
+[Unit]
+Description=Täglicher NVMe Health Check
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
