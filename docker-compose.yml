@@ -1,6 +1,6 @@
 services:
   smtp-relay:
-    image: boky/postfix:latest
+    image: boky/postfix:v5.1.0
     container_name: smtp-relay
     restart: unless-stopped
     env_file:
