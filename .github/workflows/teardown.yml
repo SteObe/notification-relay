@@ -1,0 +1,62 @@
+name: Teardown notification-relay
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Zum Bestätigen "loeschen" eingeben'
+        required: true
+
+jobs:
+  teardown:
+    runs-on: self-hosted
+    steps:
+      - name: Bestätigung prüfen
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "loeschen" ]; then
+            echo "❌ Bestätigung fehlt – abgebrochen"
+            exit 1
+          fi
+
+      - name: SMTP-Relay Container stoppen
+        run: |
+          cd /opt/docker/notification-relay
+          sudo docker compose down --remove-orphans
+          echo "✅ smtp-relay gestoppt"
+
+      - name: Systemd Timer deaktivieren und entfernen
+        run: |
+          for unit in nvme-health-check health-check restic-check; do
+            sudo systemctl disable --now "${unit}.timer" 2>/dev/null || true
+            sudo rm -f /etc/systemd/system/${unit}.service
+            sudo rm -f /etc/systemd/system/${unit}.timer
+          done
+          sudo systemctl daemon-reload
+          echo "✅ Systemd Timer entfernt"
+
+      - name: PAM-Eintrag für SSH-Notifications entfernen
+        run: |
+          sudo sed -i '/notify-ssh-login\.sh/d' /etc/pam.d/sshd
+          echo "✅ PAM-Eintrag entfernt"
+
+      - name: Systemd Drop-in für Backup-Notification entfernen
+        run: |
+          sudo rm -rf /etc/systemd/system/restic-backup.service.d
+          sudo systemctl daemon-reload
+          echo "✅ Backup Drop-in entfernt"
+
+      - name: Scripts entfernen
+        run: |
+          sudo rm -f \
+            /usr/local/bin/notify.sh \
+            /usr/local/bin/notify-ssh-login.sh \
+            /usr/local/bin/notify-backup.sh \
+            /usr/local/bin/nvme-health-check.sh \
+            /usr/local/bin/health-check.sh \
+            /usr/local/bin/restic-check.sh
+          echo "✅ Notification-Scripts entfernt"
+
+      - name: Dateien entfernen
+        run: |
+          sudo rm -rf /opt/docker/notification-relay
+          echo "✅ /opt/docker/notification-relay entfernt"
