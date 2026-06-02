@@ -1,0 +1,26 @@
+name: Cleanup NVMe data
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Zum Bestätigen "loeschen" eingeben'
+        required: true
+
+jobs:
+  cleanup:
+    runs-on: self-hosted
+    steps:
+      - name: Bestätigung prüfen
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "loeschen" ]; then
+            echo "❌ Bestätigung fehlt – abgebrochen"
+            exit 1
+          fi
+
+      - name: NVMe-Daten entfernen
+        run: |
+          sudo rm -rf /mnt/nvme/docker/uptime-kuma
+          echo "✅ /mnt/nvme/docker/uptime-kuma entfernt"
+          sudo rm -rf /mnt/nvme/docker/notification-relay 2>/dev/null || true
+          echo "✅ erledigt"
